@@ -115,7 +115,7 @@ export function BigButton(props: BigButtonProps) {
     );
   }
 
-  const { as: _as, onClick, disabled, ...rest } = props as BigButtonBaseProps &
+  const { as: _, onClick, disabled, ...rest } = props as BigButtonBaseProps &
     React.ButtonHTMLAttributes<HTMLButtonElement> & { as?: "button" };
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {

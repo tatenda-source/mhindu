@@ -24,23 +24,16 @@ export interface TreatmentPlanViewProps {
 
 const REAL_IPM_WHATSAPP = "254700000000";
 
-function typeIcon(
-  type: TreatmentOption["type"],
-): React.ComponentType<{ size?: number; className?: string }> {
-  switch (type) {
-    case "biological":
-      return Bug;
-    case "cultural":
-      return Shovel;
-    case "mechanical":
-      return CheckCircle2;
-    case "chemical":
-      return FlaskConical;
-    case "no_action":
-    default:
-      return Leaf;
-  }
-}
+const TYPE_ICON: Record<
+  TreatmentOption["type"],
+  React.ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean | "true" }>
+> = {
+  biological: Bug,
+  cultural: Shovel,
+  mechanical: CheckCircle2,
+  chemical: FlaskConical,
+  no_action: Leaf,
+};
 
 function typeLabelKey(type: TreatmentOption["type"]): string {
   return `treatment.${type}`;
@@ -95,7 +88,7 @@ function StepRow({
   option: TreatmentOption;
 }) {
   const t = useT();
-  const Icon = typeIcon(option.type);
+  const IconComponent = TYPE_ICON[option.type] ?? Leaf;
 
   return (
     <div className="flex items-start gap-4 py-3">
@@ -110,7 +103,7 @@ function StepRow({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <Icon size={18} className="text-leaf-700 shrink-0" aria-hidden />
+          <IconComponent size={18} className="text-leaf-700 shrink-0" aria-hidden />
           <span className="text-base font-sans font-semibold text-ink-900">
             {t(typeLabelKey(option.type))}
           </span>

@@ -4,7 +4,6 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useState,
 } from "react";
 
@@ -43,11 +42,7 @@ interface LocaleContextValue {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
-
-  useEffect(() => {
-    setLocaleState(readStored());
-  }, []);
+  const [locale, setLocaleState] = useState<Locale>(readStored);
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
@@ -92,6 +87,6 @@ export function useT(): (
   return useLocale().t;
 }
 
-export function setLocale(_l: Locale): void {
+export function setLocale(): never {
   throw new Error("setLocale must be called inside a LocaleProvider context");
 }

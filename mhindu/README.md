@@ -108,9 +108,35 @@ vercel deploy        # creates a preview deployment
 
 ---
 
-## CI
+## CI / CD
 
-GitHub Actions at `../.github/workflows/ci.yml` — runs on every PR and `main` push:
-typecheck → build. Lint runs but is non-blocking until ESLint config is tuned.
+Three workflows in `../.github/workflows/`:
 
-Drizzle migrate is **not** run in CI (no DB). Run `pnpm drizzle-kit migrate` against a Neon branch manually or wire it to a preview-deploy hook.
+| Workflow | Trigger | Does |
+|---|---|---|
+| `ci.yml` | PR + push to `main` | typecheck, lint, build, migration drift check, secret scan |
+| `preview.yml` | PR opened/updated | migrate preview DB, Vercel preview deploy, PR comment with URL |
+| `production.yml` | Push to `main` | migrate production DB, Vercel prod deploy, health check `/api/health` |
+
+Dependabot (`../.github/dependabot.yml`) runs weekly for npm and GitHub Actions dependencies, grouped minor+patch, capped at 5 open PRs.
+
+Migrations are CI-driven (not Vercel build-time). `vercel.ts` `buildCommand` stays `pnpm build`.
+
+### GitHub secrets required
+
+Add these in **Settings → Secrets and variables → Actions** before the first push:
+
+| Secret | Where to get it |
+|---|---|
+| `VERCEL_TOKEN` | vercel.com → Account Settings → Tokens |
+| `VERCEL_ORG_ID` | `vercel link` → writes to `.vercel/project.json` as `orgId` |
+| `VERCEL_PROJECT_ID` | `vercel link` → writes to `.vercel/project.json` as `projectId` |
+| `DATABASE_URL` | Vercel dashboard → Project → Settings → Environment Variables → copy Neon URL |
+
+### Recommended branch protection (Settings → Branches → main)
+
+- Require status checks to pass before merging: `build` (ci.yml), `secret-scan` (ci.yml)
+- Require linear history
+- Do not allow bypassing the above settings
+- Block direct pushes to `main`
+- Require pull request reviews before merging (recommended, not required)

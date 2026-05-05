@@ -5,7 +5,7 @@ import {
   type TreatmentOption,
   type TreatmentPlan,
 } from "./schemas";
-import type { IpmRank, PestKbEntry, PestKbMap, PestKbOption } from "./kb-types";
+import type { IpmRank, PestKbMap, PestKbOption } from "./kb-types";
 import { thresholdGate } from "./rules/threshold";
 import { beneficialGate } from "./rules/beneficial";
 import { weatherCompatible } from "./rules/weather";
@@ -59,7 +59,7 @@ const noActionOption = (rationale: string): TreatmentOption => ({
 });
 
 function kbOptionToTreatment(o: PestKbOption, notes: string[]): TreatmentOption {
-  let supplier_id = o.supplier_id;
+  const supplier_id = o.supplier_id;
   let supplier_lead_time_days = o.supplier_lead_time_days;
 
   if (o.agent_id) {
@@ -223,7 +223,7 @@ export function decide(detection: Detection, context: Context, deps: DecideDeps 
 
   const avoided = pesticideAvoidedLitres(primary, context, application);
 
-  const rule_fired = ruleNameForRank(primaryKb.ipm_rank, kb);
+  const rule_fired = ruleNameForRank(primaryKb.ipm_rank);
 
   return {
     decision_log_id: crypto.randomUUID(),
@@ -239,7 +239,7 @@ export function decide(detection: Detection, context: Context, deps: DecideDeps 
   };
 }
 
-function ruleNameForRank(rank: IpmRank, _kb: PestKbEntry): string {
+function ruleNameForRank(rank: IpmRank): string {
   switch (rank) {
     case "cultural":
       return "ipm_cultural_selected";

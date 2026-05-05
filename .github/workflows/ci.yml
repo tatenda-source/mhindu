@@ -14,6 +14,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         with:
@@ -31,13 +33,30 @@ jobs:
       - name: Typecheck
         run: pnpm tsc --noEmit
 
+      - name: Lint
+        run: pnpm lint
+
       - name: Build
         run: pnpm build
         env:
-          # Satisfies Next.js build-time env shape; no real key needed for build.
           AI_GATEWAY_API_KEY: ci-placeholder
           MHINDU_DEFAULT_REGION: zimbabwe
 
-      # TODO: tune ESLint config before enabling as a blocking check.
-      # - name: Lint
-      #   run: pnpm lint
+      - name: Migration drift check
+        run: |
+          pnpm drizzle-kit generate
+          if [ -n "$(git status --porcelain src/db/migrations/)" ]; then
+            echo "Schema drift: uncommitted migration files detected. Run pnpm db:generate and commit the result."
+            git status --porcelain src/db/migrations/
+            exit 1
+          fi
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

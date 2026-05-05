@@ -1,4 +1,4 @@
-import { eq, gte, sql, count } from "drizzle-orm";
+import { eq, sql, count } from "drizzle-orm";
 import { getDb } from "../client";
 import { decisionLogs, treatments, scouts, fields, orgMembers } from "../schema";
 
