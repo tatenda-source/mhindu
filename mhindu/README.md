@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mhindu
 
-## Getting Started
+Low-pesticide precision IPM platform for Sub-Saharan smallholder and commercial farmers. Thesis: detect-then-treat + biocontrol-first stacks to 80–95% pesticide reduction versus a calendar-spray baseline.
 
-First, run the development server:
+Full project context: [`../CLAUDE.md`](../CLAUDE.md)
+
+---
+
+## Local development
+
+**Postgres setup** — requires a local Postgres instance (Postgres.app, `brew install postgresql`, or Docker).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+createdb mhindu
+export DATABASE_URL=postgresql://localhost/mhindu
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Database scripts**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm db:generate   # regenerate migration SQL after schema changes
+pnpm db:migrate    # apply migrations to DATABASE_URL
+pnpm db:seed       # load synthetic dev data (1 farmer, 1 org, 2 fields, 3 scouts with detections + decisions)
+pnpm db:studio     # open Drizzle Studio at http://localhost:4983
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+If `DATABASE_URL` is unset the app degrades gracefully — API routes skip Postgres writes and the client's IndexedDB cache remains canonical. This is by design for the offline-first smallholder story.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Quickstart
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm install
+cp .env.example .env.local   # fill in keys you have; see below for sources
+pnpm dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000).
 
-## Deploy on Vercel
+**Demo mode** — if `AI_GATEWAY_API_KEY` is unset, `/api/scout` returns a canned Fall Armyworm detection so the full UI flow (photo → decision → biocontrol recommendation) works with zero credentials.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Environment variables
+
+| Variable | Source | Required for live |
+|---|---|---|
+| `AI_GATEWAY_API_KEY` | Vercel Marketplace → AI Gateway (prefer OIDC) | Vision detection |
+| `DATABASE_URL` | Vercel Marketplace → Neon (auto-injected per environment) | Persistence |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Marketplace → Blob (private mode) | Scout image upload |
+| `MHINDU_DEFAULT_REGION` | Project-level, default `zimbabwe` | IPM thresholds |
+
+Pull all env for local dev after `vercel link`:
+
+```bash
+vercel env pull .env.local
+```
+
+---
+
+## Architecture
+
+```
+mhindu/
+├─ src/app/          # Next.js 16 App Router pages + API routes
+├─ src/lib/
+│   ├─ ipm/          # IPM decision engine (pure functions, Zod contracts)
+│   ├─ vision/       # Pest detection pipeline (AI Gateway, structured output)
+│   └─ biocontrol/   # Biocontrol catalog + release scheduler
+└─ public/           # PWA manifest, icons
+```
+
+Agent team: `../.claude/agents/` — 8 specialists covering agronomy, IPM engine, vision pipeline, field data modelling, robotics, biocontrol logistics, measurement auditing, and UX.
+
+Skill library: `../.claude/skills/` — 8 auto-triggering knowledge packs.
+
+---
+
+## Deployment
+
+### Preview
+
+```bash
+vercel link          # link to Vercel project once
+vercel deploy        # creates a preview deployment
+```
+
+### Marketplace integrations (install once per Vercel project)
+
+1. **AI Gateway** — Vercel Marketplace. Provides `AI_GATEWAY_API_KEY`; use OIDC where offered.
+2. **Neon Postgres** — Vercel Marketplace. Auto-creates branch per preview deployment; injects `DATABASE_URL`.
+3. **Vercel Blob** — Vercel Marketplace. Private mode. Provides `BLOB_READ_WRITE_TOKEN`. Phase 0+.
+4. **Clerk** — Vercel Marketplace. Phone OTP for farmers; email + magic link for cooperative officers. Phase 1.
+
+### Production cutover checklist
+
+- [ ] Vercel project linked to `main` branch; auto-deploy enabled
+- [ ] All four Marketplace integrations installed and env vars verified in Vercel dashboard
+- [ ] Neon prod project separated from preview project; `DATABASE_URL` scoped to Production environment
+- [ ] Clerk prod environment created (separate publishable key from preview)
+- [ ] `MHINDU_DEFAULT_REGION=zimbabwe` set at project level
+- [ ] Rolling Release configured (10% → 50% → 100% over 30 min) once real traffic exists
+- [ ] Web Vitals + Function duration alerts wired (p95 > 3s on `/api/scout` → alert)
+- [ ] Nightly cron jobs uncommented in `vercel.ts` and `DATABASE_URL` confirmed live
+- [ ] Pesticide-avoided ledger health check job passes (every `treatment` has `decision_log` parent + `avoided_litres`)
+- [ ] Rollback tested: `vercel rollback <prev-deployment-url>`
+
+---
+
+## CI
+
+GitHub Actions at `../.github/workflows/ci.yml` — runs on every PR and `main` push:
+typecheck → build. Lint runs but is non-blocking until ESLint config is tuned.
+
+Drizzle migrate is **not** run in CI (no DB). Run `pnpm drizzle-kit migrate` against a Neon branch manually or wire it to a preview-deploy hook.

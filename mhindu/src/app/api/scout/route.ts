@@ -3,6 +3,8 @@ import { z } from "zod";
 import { identify } from "@/lib/vision";
 import { decide } from "@/lib/ipm/engine";
 import type { Context, Detection, TreatmentPlan } from "@/lib/ipm/schemas";
+import { insertScoutWithDecision } from "@/db/queries/scouts";
+import { getDb } from "@/db/client";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -101,5 +103,43 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({ detection, plan, demo });
+  // Write to Postgres server-of-record if available.
+  // DB failure must never fail the request — client cache is canonical for offline-first.
+  let server_scout_id: string | undefined;
+  let server_decision_log_id: string | undefined;
+  let server_treatment_id: string | undefined;
+
+  if (getDb() !== null) {
+    try {
+      const userId = req.headers.get("x-mhindu-user-id") ?? undefined;
+      const result = await insertScoutWithDecision({
+        scoutInput: {
+          field_id: parsed.field.id,
+          taken_at: new Date(parsed.taken_at),
+          gps_lat: parsed.gps?.lat ?? null,
+          gps_lng: parsed.gps?.lng ?? null,
+        },
+        detection,
+        plan,
+        context,
+        userId,
+      });
+      server_scout_id = result.scoutId;
+      server_decision_log_id = result.decisionLogId;
+      server_treatment_id = result.treatmentId;
+    } catch (err) {
+      console.error("[scout] db_write_failed:", err);
+    }
+  }
+
+  return NextResponse.json({
+    detection,
+    plan,
+    demo,
+    ...(server_scout_id && {
+      server_scout_id,
+      server_decision_log_id,
+      server_treatment_id,
+    }),
+  });
 }

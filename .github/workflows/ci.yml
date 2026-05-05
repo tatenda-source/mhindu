@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mhindu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: mhindu/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm tsc --noEmit
+
+      - name: Build
+        run: pnpm build
+        env:
+          # Satisfies Next.js build-time env shape; no real key needed for build.
+          AI_GATEWAY_API_KEY: ci-placeholder
+          MHINDU_DEFAULT_REGION: zimbabwe
+
+      # TODO: tune ESLint config before enabling as a blocking check.
+      # - name: Lint
+      #   run: pnpm lint

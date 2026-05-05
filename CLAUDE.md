@@ -93,6 +93,18 @@ These need user direction before scaffolding the application beyond the empty Ne
 - **Local language and farmer literacy first.** Plain language, voice readout, big buttons. SaaS aesthetics are deadweight.
 - **Honest measurement.** Don't ship "90% reduction" UI before outcome verification is ≥80% across a meaningful sample.
 
+## Deployment
+
+Developer guide and production cutover checklist: [`mhindu/README.md`](mhindu/README.md).
+
+Required Marketplace integrations (install via Vercel dashboard before first production deploy):
+- **AI Gateway** → `AI_GATEWAY_API_KEY` (OIDC preferred)
+- **Neon Postgres** → `DATABASE_URL` (auto-branched per preview)
+- **Vercel Blob** (private) → `BLOB_READ_WRITE_TOKEN`
+- **Clerk** → `CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` (Phase 1)
+
+Vercel config: [`mhindu/vercel.ts`](mhindu/vercel.ts). CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
 ## Working style
 
 - Vibe coding, parallel tool calls, terse responses, no trailing summaries.
