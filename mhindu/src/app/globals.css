@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+@theme {
+  /* Earth — terracotta primary */
+  --color-earth-100: #f5d8c8;
+  --color-earth-300: #e08a6c;
+  --color-earth-500: #b04a2e;
+  --color-earth-700: #5a2a1f;
+  --color-earth-900: #2a1410;
+
+  /* Leaf — chlorophyll action */
+  --color-leaf-100: #d4ead9;
+  --color-leaf-300: #6db888;
+  --color-leaf-500: #2f7d4a;
+  --color-leaf-700: #1f4d31;
+  --color-leaf-900: #0e2818;
+
+  /* Ink — text and chrome */
+  --color-ink-100: #d8d3cb;
+  --color-ink-300: #a39d96;
+  --color-ink-500: #6e6862;
+  --color-ink-700: #3a3631;
+  --color-ink-900: #161513;
+  --color-ink-1000: #0b0b0a;
+
+  /* Bone — paper background */
+  --color-bone-100: #f9f4ec;
+  --color-bone-200: #f0e9dd;
+
+  /* Iron — robotic cool */
+  --color-iron-300: #8a96a0;
+  --color-iron-500: #4f5a62;
+  --color-iron-700: #2c3338;
+
+  /* Signal */
+  --color-signal-warn: #d4882a;
+  --color-signal-danger: #b8362d;
+  --color-signal-go: #2f7d4a;
+
+  /* Type */
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  /* Radii */
+  --radius-card: 12px;
+  --radius-button: 8px;
+}
+
+:root {
+  --background: var(--color-bone-100);
+  --foreground: var(--color-ink-900);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: var(--color-ink-1000);
+    --foreground: var(--color-bone-100);
+  }
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+/* Slab serif display */
+.font-display {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 50, "WONK" 0, "opsz" 144;
+  letter-spacing: -0.015em;
+}
+
+/* Big tap targets, no hover-only affordances */
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Outdoor-glare-friendly focus ring */
+:focus-visible {
+  outline: 3px solid var(--color-leaf-500);
+  outline-offset: 2px;
+}
