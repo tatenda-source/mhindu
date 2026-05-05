@@ -1,65 +1,88 @@
-import Image from "next/image";
+"use client";
+
+import Link from "next/link";
+import { useMemo } from "react";
+import { Camera, Layers, Droplets } from "lucide-react";
+import { Logo } from "@/components/brand/Logo";
+import { BigButton } from "@/components/farmer/BigButton";
+import { useFields, useAllScouts } from "@/lib/store/hooks";
 
 export default function Home() {
+  const fields = useFields();
+  const scouts = useAllScouts();
+
+  const stats = useMemo(() => {
+    const allScouts = scouts ?? [];
+    const totalAvoided = allScouts.reduce((acc, s) => {
+      return acc + (s.plan?.pesticide_avoided_litres ?? 0);
+    }, 0);
+    return {
+      fieldCount: fields?.length ?? 0,
+      scoutCount: allScouts.length,
+      avoidedLitres: totalAvoided,
+    };
+  }, [fields, scouts]);
+
+  const hasField = (fields?.length ?? 0) > 0;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="px-5 py-8 max-w-md mx-auto flex flex-col gap-8 min-h-dvh">
+      <header className="flex items-center justify-between">
+        <Logo size="md" />
+        <span className="text-xs uppercase tracking-widest text-ink-500 font-mono">
+          v0.1
+        </span>
+      </header>
+
+      <section className="flex flex-col gap-2">
+        <h1 className="font-display text-4xl leading-tight text-ink-900">
+          Cut the spray.
+          <br />
+          <span className="text-leaf-700">Grow the harvest.</span>
+        </h1>
+        <p className="text-base text-ink-700">
+          Scout. Decide biocontrol-first. Spray only what you must.
+        </p>
+      </section>
+
+      {stats.scoutCount > 0 && (
+        <Link
+          href="/ledger"
+          className="bg-bone-200 rounded-2xl p-5 flex items-center gap-4 border border-ink-100/50 active:bg-bone-100"
+        >
+          <Droplets className="text-leaf-500 shrink-0" size={32} strokeWidth={1.6} />
+          <div className="flex-1">
+            <div className="text-sm text-ink-700">Pesticide saved this season</div>
+            <div className="font-display text-3xl text-ink-900">
+              {stats.avoidedLitres.toFixed(1)}
+              <span className="text-base text-ink-500 font-sans ml-1">L</span>
+            </div>
+          </div>
+          <span className="text-sm text-leaf-700 underline underline-offset-4">
+            ledger
+          </span>
+        </Link>
+      )}
+
+      <section className="flex flex-col gap-3">
+        {hasField ? (
+          <BigButton as="a" href="/scout" variant="primary" leftIcon={Camera}>
+            Scout a field
+          </BigButton>
+        ) : (
+          <BigButton as="a" href="/fields/new" variant="primary" leftIcon={Layers}>
+            Add your first field
+          </BigButton>
+        )}
+
+        <BigButton as="a" href="/fields" variant="secondary" leftIcon={Layers}>
+          {hasField ? `Fields (${stats.fieldCount})` : "Fields"}
+        </BigButton>
+      </section>
+
+      <footer className="mt-auto text-xs text-ink-500 font-mono uppercase tracking-widest">
+        Mhindu · biocontrol-first IPM · zimbabwe
+      </footer>
+    </main>
   );
 }

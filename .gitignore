@@ -6,6 +6,7 @@ out/
 .env.local
 .env.production
 .env.development
+!.env.example
 *.log
 .vercel
 .turbo
